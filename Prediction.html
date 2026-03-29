@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORACLE — Prediction Market Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root {
+    --bg:#080b10;--surface:#0e1218;--surface2:#141a24;--border:#1e2a3a;
+    --poly:#00e5ff;--kalshi:#7c3aed;
+    --green:#00ff87;--red:#ff3b5c;--yellow:#ffd600;--orange:#ff6b35;
+    --text:#e0e8f0;--muted:#4a6080;
+    --mono:'Space Mono',monospace;--display:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+  .wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:0 20px}
+
+  header{padding:24px 0 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .logo{font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:-1px;background:linear-gradient(135deg,var(--poly),var(--kalshi));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo small{font-size:11px;font-family:var(--mono);font-weight:400;-webkit-text-fill-color:var(--muted);display:block;letter-spacing:3px;margin-top:-4px}
+  .sbar{display:flex;align-items:center;gap:20px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2s ease-in-out infinite;display:inline-block;margin-right:6px}
+  .dot.off{background:var(--muted);animation:none}
+  @keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,135,.4)}50%{opacity:.6;box-shadow:0 0 0 5px rgba(0,255,135,0)}}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0 16px}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .sl{font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+  .sv{font-family:var(--display);font-weight:800;font-size:26px;line-height:1}
+  .ss{font-size:10px;color:var(--muted);margin-top:3px}
+
+  .grid{display:grid;grid-template-columns:300px 1fr;gap:20px;padding:20px 0}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .sidebar{display:flex;flex-direction:column;gap:16px}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .ph{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:2px;color:var(--muted);display:flex;align-items:center;justify-content:space-between}
+  .ph b{color:var(--text);font-family:var(--display);font-size:12px;letter-spacing:1px}
+  .pb{padding:14px 16px}
+
+  .cg{margin-bottom:14px}.cg:last-child{margin-bottom:0}
+  .cl{font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;display:flex;align-items:center}
+  .rv{color:var(--poly);font-weight:700;margin-left:auto}
+  input[type=range]{width:100%;accent-color:var(--poly);height:3px;margin-top:2px}
+  input[type=text],input[type=number],input[type=email],input[type=password],select{
+    width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+    padding:7px 10px;font-family:var(--mono);font-size:11px;border-radius:4px;outline:none}
+  input:focus,select:focus{border-color:var(--poly)}
+  .tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:11px;color:var(--text)}
+  .tog{position:relative;width:32px;height:18px;cursor:pointer;flex-shrink:0}
+  .tog input{opacity:0;width:0;height:0}
+  .tsl{position:absolute;inset:0;background:var(--border);border-radius:9px;transition:.2s}
+  .tsl:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:var(--muted);border-radius:50%;transition:.2s}
+  .tog input:checked+.tsl{background:var(--poly)}
+  .tog input:checked+.tsl:before{transform:translateX(14px);background:var(--bg)}
+  .btn{width:100%;padding:9px;font-family:var(--mono);font-size:11px;letter-spacing:2px;border:none;border-radius:4px;cursor:pointer;transition:all .15s;margin-top:4px}
+  .btn-p{background:var(--poly);color:var(--bg);font-weight:700}.btn-p:hover{background:#33ecff}
+  .btn-s{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-s:hover{color:var(--text);border-color:var(--muted)}
+
+  .fc{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .fb{padding:5px 12px;font-family:var(--mono);font-size:10px;letter-spacing:1px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+  .fb.on{color:var(--bg);border-color:transparent}
+  .fb[data-t=ALL].on{background:var(--text);color:var(--bg)}
+  .fb[data-t=PRICE].on{background:var(--green)}
+  .fb[data-t=WHALE].on{background:var(--yellow);color:var(--bg)}
+  .fb[data-t=THRESHOLD].on{background:var(--poly)}
+  .fb[data-t=NEW_MARKET].on{background:var(--kalshi)}
+  .fb[data-t=NEW_WALLET].on{background:var(--orange)}
+
+  .feed{display:flex;flex-direction:column;gap:8px;max-height:640px;overflow-y:auto;padding-right:4px}
+  .feed::-webkit-scrollbar{width:4px}
+  .feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  .ac{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;animation:si .3s ease}
+  .ac:hover{border-color:var(--poly)}
+  @keyframes si{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  .ac.PRICE{border-left:3px solid var(--green)}.ac.WHALE{border-left:3px solid var(--yellow)}
+  .ac.THRESHOLD{border-left:3px solid var(--poly)}.ac.NEW_MARKET{border-left:3px solid var(--kalshi)}
+  .ac.NEW_WALLET{border-left:3px solid var(--orange)}.ac.INFO{border-left:3px solid var(--border);opacity:.5}
+  .ai{font-size:16px;margin-top:1px}
+  .at{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;line-height:1.3}
+  .ad{font-size:11px;color:var(--muted);line-height:1.5}
+  .am{text-align:right;font-size:10px;color:var(--muted);white-space:nowrap}
+  .pt{display:inline-block;padding:2px 6px;border-radius:2px;font-size:9px;letter-spacing:1px;font-weight:700;margin-bottom:3px}
+  .pt.p{background:rgba(0,229,255,.1);color:var(--poly)}.pt.k{background:rgba(124,58,237,.15);color:#a78bfa}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty .ei{font-size:40px;margin-bottom:12px}.empty p{font-size:12px;line-height:1.7}
+
+  .mi{padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .mi:last-child{border-bottom:none}
+  .mn{font-size:11px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+  .mp{font-size:13px;font-weight:700;font-family:var(--display)}
+  .hi{color:var(--green)}.mid{color:var(--yellow)}.lo{color:var(--red)}
+
+  .es{display:flex;align-items:center;font-size:10px;padding:4px 8px;border-radius:3px;margin-top:6px;width:100%;justify-content:center}
+  .es.ok{background:rgba(0,255,135,.08);color:var(--green);border:1px solid rgba(0,255,135,.2)}
+  .es.err{background:rgba(255,59,92,.08);color:var(--red);border:1px solid rgba(255,59,92,.2)}
+  .es.info{background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border)}
+
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--poly);border-radius:50%;animation:rot .8s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  *{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">ORACLE<small>PREDICTION MARKET INTELLIGENCE</small></div>
+    <div class="sbar">
+      <span><span class="dot off" id="dot"></span><span id="stxt">READY</span></span>
+      <span id="lpoll">—</span>
+      <span id="cd"></span>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="sl">TOTAL ALERTS</div><div class="sv" id="sTotal">0</div><div class="ss">this session</div></div>
+    <div class="stat"><div class="sl">WHALES</div><div class="sv" style="color:var(--yellow)" id="sWhale">0</div><div class="ss">detected</div></div>
+    <div class="stat"><div class="sl">POLY MARKETS</div><div class="sv" style="color:var(--poly)" id="sPoly">—</div><div class="ss">tracked</div></div>
+    <div class="stat"><div class="sl">KALSHI MARKETS</div><div class="sv" style="color:#a78bfa" id="sKal">—</div><div class="ss">tracked</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="sidebar">
+
+      <!-- ALERT SETTINGS -->
+      <div class="panel">
+        <div class="ph"><b>ALERT SETTINGS</b></div>
+        <div class="pb">
+          <div class="tr"><span>🟢 Price Move</span><label class="tog"><input type="checkbox" id="tPrice" checked><span class="tsl"></span></label></div>
+          <div class="cg"><div class="cl">MIN MOVE <span class="rv" id="vPrice">5%</span></div><input type="range" min="1" max="30" value="5" id="rPrice" oninput="document.getElementById('vPrice').textContent=this.value+'%'"></div>
+
+          <div class="tr"><span>🟡 Whale Trade</span><label class="tog"><input type="checkbox" id="tWhale" checked><span class="tsl"></span></label></div>
+          <div class="cg"><div class="cl">MIN SIZE <span class="rv" id="vWhale">$5,000</span></div><input type="range" min="500" max="50000" step="500" value="5000" id="rWhale" oninput="document.getElementById('vWhale').textContent='$'+Number(this.value).toLocaleString()"></div>
+
+          <div class="tr"><span>🔵 Prob Threshold</span><label class="tog"><input type="checkbox" id="tThresh" checked><span class="tsl"></span></label></div>
+          <div class="cg"><div class="cl">ALERT ABOVE <span class="rv" id="vThresh">70%</span></div><input type="range" min="50" max="99" value="70" id="rThresh" oninput="document.getElementById('vThresh').textContent=this.value+'%'"></div>
+
+          <div class="tr"><span>🟣 New Markets</span><label class="tog"><input type="checkbox" id="tMkt" checked><span class="tsl"></span></label></div>
+          <div class="cg"><div class="cl">KEYWORDS</div><input type="text" id="keywords" value="fed, rate, bitcoin, trump"></div>
+
+          <div class="tr"><span>🟠 New Wallets</span><label class="tog"><input type="checkbox" id="tWallet" checked><span class="tsl"></span></label></div>
+          <div class="cg"><div class="cl">FIRST TRADE MIN ($)</div><input type="number" id="walletMin" value="1000" min="100"></div>
+
+          <div class="cg"><div class="cl">POLL INTERVAL</div>
+            <select id="interval">
+              <option value="15000">15 seconds</option>
+              <option value="30000" selected>30 seconds</option>
+              <option value="60000">1 minute</option>
+              <option value="120000">2 minutes</option>
+            </select>
+          </div>
+
+          <button class="btn btn-p" onclick="startMonitoring()">▶ START MONITORING</button>
+          <button class="btn btn-s" onclick="stopMonitoring()">■ PAUSE</button>
+          <button class="btn btn-s" onclick="doPoll()">⟳ POLL NOW</button>
+          <button class="btn btn-s" onclick="clearFeed()">✕ CLEAR</button>
+        </div>
+      </div>
+
+      <!-- EMAIL ALERTS -->
+      <div class="panel">
+        <div class="ph"><b>✉ EMAIL ALERTS</b></div>
+        <div class="pb">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:12px;line-height:1.7">
+            Uses <a href="https://emailjs.com" target="_blank" style="color:var(--poly)">EmailJS</a> (free, 200/mo).
+            Create account → add Email Service → create Template → paste credentials below.
+            Template variables: <code style="color:var(--text)">{{to_email}} {{subject}} {{message}}</code>
+          </div>
+          <div class="cg"><div class="cl">PUBLIC KEY</div><input type="password" id="ejsKey" placeholder="your_public_key"></div>
+          <div class="cg"><div class="cl">SERVICE ID</div><input type="text" id="ejsSvc" placeholder="service_xxxxxxx"></div>
+          <div class="cg"><div class="cl">TEMPLATE ID</div><input type="text" id="ejsTpl" placeholder="template_xxxxxxx"></div>
+          <div class="cg"><div class="cl">RECIPIENT EMAIL</div><input type="email" id="eTo" placeholder="you@example.com"></div>
+          <div style="border-top:1px solid var(--border);margin:12px 0"></div>
+          <div class="tr"><span style="font-size:11px">Price Move</span><label class="tog"><input type="checkbox" id="ePrice" checked><span class="tsl"></span></label></div>
+          <div class="tr"><span style="font-size:11px">Whale Trade</span><label class="tog"><input type="checkbox" id="eWhale" checked><span class="tsl"></span></label></div>
+          <div class="tr"><span style="font-size:11px">Prob Threshold</span><label class="tog"><input type="checkbox" id="eThresh" checked><span class="tsl"></span></label></div>
+          <div class="tr"><span style="font-size:11px">New Market</span><label class="tog"><input type="checkbox" id="eMkt"><span class="tsl"></span></label></div>
+          <div class="tr"><span style="font-size:11px">New Wallet</span><label class="tog"><input type="checkbox" id="eWallet" checked><span class="tsl"></span></label></div>
+          <button class="btn btn-p" onclick="saveEmail()" style="margin-top:10px">SAVE & ENABLE</button>
+          <button class="btn btn-s" onclick="testEmail()">SEND TEST EMAIL</button>
+          <div id="eStatus" class="es info" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- TOP MARKETS -->
+      <div class="panel">
+        <div class="ph"><b>TOP MARKETS</b><span id="snapTime" style="font-size:10px">—</span></div>
+        <div class="pb" id="snap"><div style="color:var(--muted);font-size:11px;text-align:center;padding:16px 0">Start monitoring to load</div></div>
+      </div>
+
+    </div>
+
+    <!-- FEED -->
+    <div>
+      <div class="fc">
+        <button class="fb on" data-t="ALL" onclick="setFilter('ALL',this)">ALL</button>
+        <button class="fb" data-t="PRICE" onclick="setFilter('PRICE',this)">PRICE MOVE</button>
+        <button class="fb" data-t="WHALE" onclick="setFilter('WHALE',this)">WHALE</button>
+        <button class="fb" data-t="THRESHOLD" onclick="setFilter('THRESHOLD',this)">THRESHOLD</button>
+        <button class="fb" data-t="NEW_MARKET" onclick="setFilter('NEW_MARKET',this)">NEW MKT</button>
+        <button class="fb" data-t="NEW_WALLET" onclick="setFilter('NEW_WALLET',this)">NEW WALLET</button>
+        <span style="margin-left:auto;font-size:10px;color:var(--muted)" id="fCount">0 alerts</span>
+      </div>
+      <div class="feed" id="feed">
+        <div class="empty"><div class="ei">📡</div><p>Hit <b style="color:var(--text)">▶ START MONITORING</b><br>to begin receiving live alerts<br>from Polymarket and Kalshi.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+var alerts=[], filter='ALL';
+var polyCache={}, kalCache={};
+var seenPoly=new Set(), seenKal=new Set(), seenWallets=new Set();
+var pollCount=0, pollTimer=null, cdTimer=null, cdSec=0;
+var stats={total:0,whale:0};
+var emailEnabled=false;
+
+var META={
+  PRICE:{i:'📈',l:'PRICE MOVE'},WHALE:{i:'🐳',l:'WHALE'},
+  THRESHOLD:{i:'🔔',l:'THRESHOLD'},NEW_MARKET:{i:'🆕',l:'NEW MARKET'},
+  NEW_WALLET:{i:'👁️',l:'NEW WALLET'},INFO:{i:'ℹ️',l:'INFO'}
+};
+
+// ── FETCH HELPERS ──────────────────────────────────────────────
+async function apiFetch(url) {
+  // Direct fetch works on GitHub Pages (real origin, CORS allowed by both APIs)
+  const r = await fetch(url, {
+    headers: { 'Accept': 'application/json' },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+// ── POLL ───────────────────────────────────────────────────────
+async function doPoll() {
+  setSt('polling');
+  document.getElementById('lpoll').textContent = 'fetching…';
+
+  try {
+    const [poly, kalRaw] = await Promise.allSettled([
+      apiFetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=50&order=volume&ascending=false'),
+      apiFetch('https://api.elections.kalshi.com/trade-api/v2/markets?limit=100&status=open')
+    ]);
+
+    const polyMarkets = poly.status === 'fulfilled' && Array.isArray(poly.value) ? poly.value : [];
+    const kalMarkets  = kalRaw.status === 'fulfilled' ? (kalRaw.value.markets || []) : [];
+
+    // Trades (non-critical, best-effort)
+    let polyTrades = [], kalTrades = [];
+    try { polyTrades = await apiFetch('https://gamma-api.polymarket.com/trades?limit=20&order=createdAt&ascending=false'); } catch(_){}
+    try { const kt = await apiFetch('https://api.elections.kalshi.com/trade-api/v2/markets/trades?limit=20'); kalTrades = kt.trades||[]; } catch(_){}
+
+    processPoly(polyMarkets, polyTrades);
+    processKal(kalMarkets, kalTrades);
+    pollCount++;
+    setSt('live');
+    document.getElementById('lpoll').textContent = 'last: ' + ft(new Date());
+  } catch(e) {
+    addAlert('INFO', 'Poll error', e.message, 'system');
+    setSt('live');
+  }
+}
+
+// ── PROCESS POLYMARKET ─────────────────────────────────────────
+function processPoly(markets, trades) {
+  if (!Array.isArray(markets)) return;
+  var cfg=getCfg(), count=0;
+  for (var i=0;i<markets.length;i++) {
+    var m=markets[i]; if(!m.id) continue; count++;
+    var price=parseFloat(m.outcomePrices&&m.outcomePrices[0])||parseFloat(m.lastTradePrice)||null;
+    var vol=parseFloat(m.volume)||0, q=m.question||m.title||'Unknown';
+
+    if (!seenPoly.has(m.id)) {
+      seenPoly.add(m.id);
+      if (pollCount>0&&cfg.tMkt) {
+        var kw=cfg.kw.filter(function(k){return q.toLowerCase().includes(k.toLowerCase());});
+        if (!cfg.kw.length||kw.length)
+          addAlert('NEW_MARKET',q,'New Polymarket'+(kw.length?' · matched: <b>'+esc(kw.join(', '))+'</b>':'')+' · vol $'+fn(vol),'polymarket');
+      }
+    }
+    if (price===null) continue;
+    if (polyCache[m.id]!==undefined&&cfg.tPrice&&polyCache[m.id]>0) {
+      var prev=polyCache[m.id], pct=Math.abs((price-prev)/prev*100);
+      if (pct>=cfg.priceMin) {
+        var dir=price>prev?'▲':'▼', col=price>prev?'var(--green)':'var(--red)';
+        addAlert('PRICE',q,'<b style="color:'+col+'">'+dir+' '+pct.toFixed(1)+'%</b> · '+(prev*100).toFixed(1)+'¢ → <b>'+(price*100).toFixed(1)+'¢</b>','polymarket');
+      }
+    }
+    polyCache[m.id]=price;
+    if (cfg.tThresh) {
+      var pp=price*100, prevT=polyCache[m.id+'_t']||0;
+      if (pp>=cfg.thresh&&prevT<cfg.thresh)
+        addAlert('THRESHOLD',q,'Crossed <b>'+cfg.thresh+'%</b> · now <b>'+pp.toFixed(1)+'%</b>','polymarket');
+      polyCache[m.id+'_t']=pp;
+    }
+  }
+  document.getElementById('sPoly').textContent=count;
+  updateSnap(markets.slice(0,8));
+
+  if (!Array.isArray(trades)) return;
+  for (var j=0;j<trades.length;j++) {
+    var t=trades[j];
+    var sz=parseFloat(t.size||t.outcomeTokensAmount||0)*parseFloat(t.price||1);
+    var mkr=t.maker||t.transactorAddress||'', mq=t.market&&t.market.question||t.title||'Unknown';
+    if (cfg.tWhale&&sz>=cfg.whaleMin)
+      addAlert('WHALE',mq,'Size: <b>$'+fn(sz)+'</b> · wallet: <b>'+ta(mkr)+'</b> · '+(parseFloat(t.price||0)*100).toFixed(1)+'¢','polymarket');
+    if (cfg.tWallet&&mkr&&sz>=cfg.walletMin) {
+      if (!seenWallets.has(mkr)&&pollCount>0)
+        addAlert('NEW_WALLET','New wallet: '+ta(mkr),'First trade <b>$'+fn(sz)+'</b> on <b>'+esc(mq)+'</b>','polymarket');
+      seenWallets.add(mkr);
+    } else if(mkr) seenWallets.add(mkr);
+  }
+}
+
+// ── PROCESS KALSHI ─────────────────────────────────────────────
+function processKal(markets, trades) {
+  if (!Array.isArray(markets)) return;
+  var cfg=getCfg();
+  document.getElementById('sKal').textContent=markets.length;
+  for (var i=0;i<markets.length;i++) {
+    var m=markets[i], tk=m.ticker; if(!tk) continue;
+    var price=m.last_price?m.last_price/100:(m.yes_bid?m.yes_bid/100:null);
+    var title=m.title||tk, vol=m.volume||0;
+    if (!seenKal.has(tk)) {
+      seenKal.add(tk);
+      if (pollCount>0&&cfg.tMkt) {
+        var kw=cfg.kw.filter(function(k){return title.toLowerCase().includes(k.toLowerCase());});
+        if (!cfg.kw.length||kw.length)
+          addAlert('NEW_MARKET',title,'New Kalshi'+(kw.length?' · matched: <b>'+esc(kw.join(', '))+'</b>':'')+' · vol $'+fn(vol),'kalshi');
+      }
+    }
+    if (price===null) continue;
+    if (kalCache[tk]!==undefined&&cfg.tPrice&&kalCache[tk]>0) {
+      var prev=kalCache[tk], pct=Math.abs((price-prev)/prev*100);
+      if (pct>=cfg.priceMin) {
+        var dir=price>prev?'▲':'▼', col=price>prev?'var(--green)':'var(--red)';
+        addAlert('PRICE',title,'<b style="color:'+col+'">'+dir+' '+pct.toFixed(1)+'%</b> · '+(prev*100).toFixed(0)+'¢ → <b>'+(price*100).toFixed(0)+'¢</b>','kalshi');
+      }
+    }
+    kalCache[tk]=price;
+    if (cfg.tThresh) {
+      var pp=price*100, prevT=kalCache[tk+'_t']||0;
+      if (pp>=cfg.thresh&&prevT<cfg.thresh)
+        addAlert('THRESHOLD',title,'Crossed <b>'+cfg.thresh+'%</b> · now <b>'+pp.toFixed(0)+'%</b>','kalshi');
+      kalCache[tk+'_t']=pp;
+    }
+  }
+  if (!Array.isArray(trades)||!getCfg().tWhale) return;
+  for (var j=0;j<trades.length;j++) {
+    var t=trades[j], cnt=t.count||1, p2=(t.yes_price||t.no_price||50)/100, sz=cnt*p2;
+    if (sz>=getCfg().whaleMin)
+      addAlert('WHALE',t.ticker||'Kalshi','~<b>$'+fn(sz)+'</b> · '+cnt+' contracts @ <b>'+(p2*100).toFixed(0)+'¢</b>','kalshi');
+  }
+}
+
+// ── FEED ───────────────────────────────────────────────────────
+function addAlert(type,title,detail,platform) {
+  var a={id:Date.now()+Math.random(),type:type,title:title,detail:detail,platform:platform,ts:new Date()};
+  alerts.unshift(a); if(alerts.length>500) alerts=alerts.slice(0,500);
+  stats.total++; if(type==='WHALE') stats.whale++;
+  document.getElementById('sTotal').textContent=stats.total;
+  document.getElementById('sWhale').textContent=stats.whale;
+  render(); maybeEmail(a);
+}
+
+function setFilter(t,btn) {
+  filter=t;
+  document.querySelectorAll('.fb').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on'); render();
+}
+
+function render() {
+  var feed=document.getElementById('feed');
+  var list=filter==='ALL'?alerts:alerts.filter(function(a){return a.type===filter;});
+  document.getElementById('fCount').textContent=list.length+' alerts';
+  if (!list.length) {
+    feed.innerHTML='<div class="empty"><div class="ei">📡</div><p>'+(pollCount>0?'No alerts for this filter yet.':'Hit <b style="color:var(--text)">▶ START MONITORING</b><br>to begin receiving live alerts<br>from Polymarket and Kalshi.')+'</p></div>';
+    return;
+  }
+  feed.innerHTML=list.map(function(a){
+    var m=META[a.type]||{i:'•',l:a.type};
+    var pt=a.platform==='polymarket'?'<span class="pt p">POLY</span>':a.platform==='kalshi'?'<span class="pt k">KALSHI</span>':'';
+    return '<div class="ac '+a.type+'"><div class="ai">'+m.i+'</div><div><div class="at">'+pt+' '+esc(a.title)+'</div><div class="ad">'+a.detail+'</div></div><div class="am">'+ft(a.ts)+'<br><span style="color:var(--border)">'+m.l+'</span></div></div>';
+  }).join('');
+}
+
+// ── SNAPSHOT ───────────────────────────────────────────────────
+function updateSnap(markets) {
+  var el=document.getElementById('snap'); if(!markets||!markets.length) return;
+  el.innerHTML=markets.map(function(m){
+    var p=parseFloat(m.outcomePrices&&m.outcomePrices[0])||parseFloat(m.lastTradePrice)||0;
+    var pct=(p*100).toFixed(0), cls=pct>=70?'hi':pct>=40?'mid':'lo';
+    return '<div class="mi"><div class="mn">'+esc((m.question||m.title||'').substring(0,44))+'</div><div class="mp '+cls+'">'+pct+'¢</div></div>';
+  }).join('');
+  document.getElementById('snapTime').textContent=ft(new Date());
+}
+
+// ── EMAIL via EmailJS (works from GitHub Pages, real origin) ───
+function saveEmail() {
+  var key=document.getElementById('ejsKey').value.trim();
+  var svc=document.getElementById('ejsSvc').value.trim();
+  var tpl=document.getElementById('ejsTpl').value.trim();
+  var to=document.getElementById('eTo').value.trim();
+  if (!key||!svc||!tpl||!to) { showES('err','✕ Fill in all four fields'); return; }
+  try {
+    emailjs.init(key);
+    emailEnabled=true;
+    try { localStorage.setItem('oracle_ejs', JSON.stringify({key,svc,tpl,to})); } catch(_){}
+    showES('ok','✓ Email enabled');
+  } catch(e) { showES('err','✕ Init failed: '+e.message); }
+}
+
+async function sendEmail(to, subject, body) {
+  if (!emailEnabled) return;
+  var svc=document.getElementById('ejsSvc').value.trim();
+  var tpl=document.getElementById('ejsTpl').value.trim();
+  try {
+    await emailjs.send(svc, tpl, {to_email:to, subject:subject, message:body});
+  } catch(e) { console.warn('Email failed:', e); }
+}
+
+async function testEmail() {
+  var key=document.getElementById('ejsKey').value.trim();
+  var svc=document.getElementById('ejsSvc').value.trim();
+  var tpl=document.getElementById('ejsTpl').value.trim();
+  var to=document.getElementById('eTo').value.trim();
+  if (!key||!svc||!tpl||!to) { showES('err','✕ Fill in all fields first'); return; }
+  showES('info','⟳ Sending…');
+  try {
+    emailjs.init(key);
+    await emailjs.send(svc, tpl, {
+      to_email: to,
+      subject: '✅ ORACLE — Test Email',
+      message: 'ORACLE prediction market alerts are configured correctly.\n\nYou will receive alerts at this address.'
+    });
+    showES('ok','✓ Test email sent! Check your inbox.');
+    emailEnabled = true;
+  } catch(e) { showES('err','✕ Failed: '+(e.text||e.message||JSON.stringify(e))); }
+}
+
+function maybeEmail(a) {
+  if (!emailEnabled) return;
+  var to=document.getElementById('eTo').value.trim(); if(!to) return;
+  var map={PRICE:'ePrice',WHALE:'eWhale',THRESHOLD:'eThresh',NEW_MARKET:'eMkt',NEW_WALLET:'eWallet'};
+  var tid=map[a.type]; if(!tid||!document.getElementById(tid).checked) return;
+  var m=META[a.type]||{};
+  sendEmail(to,
+    (m.i||'')+' ORACLE: '+(m.l||a.type)+' — '+a.platform,
+    strip(a.title)+'\n\n'+strip(a.detail)+'\n\nTime: '+ft(a.ts)+'\nPlatform: '+a.platform
+  );
+}
+
+function showES(type,msg){
+  var el=document.getElementById('eStatus');
+  el.className='es '+type; el.textContent=msg; el.style.display='flex';
+}
+
+// ── MONITORING ─────────────────────────────────────────────────
+function startMonitoring() {
+  if(pollTimer) clearInterval(pollTimer);
+  var ms=Number(document.getElementById('interval').value);
+  doPoll();
+  pollTimer=setInterval(doPoll, ms);
+  setSt('live'); startCd(ms);
+}
+
+function stopMonitoring() {
+  if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+  if(cdTimer){clearInterval(cdTimer);cdTimer=null;}
+  document.getElementById('dot').classList.add('off');
+  document.getElementById('stxt').textContent='PAUSED';
+  document.getElementById('cd').textContent='';
+}
+
+function startCd(ms) {
+  if(cdTimer) clearInterval(cdTimer);
+  cdSec=Math.round(ms/1000);
+  cdTimer=setInterval(function(){
+    cdSec--;
+    document.getElementById('cd').textContent='next: '+cdSec+'s';
+    if(cdSec<=0) cdSec=Math.round(Number(document.getElementById('interval').value)/1000);
+  },1000);
+}
+
+function clearFeed(){
+  alerts=[];stats.total=0;stats.whale=0;
+  document.getElementById('sTotal').textContent=0;
+  document.getElementById('sWhale').textContent=0;
+  render();
+}
+
+function setSt(s){
+  var dot=document.getElementById('dot'),txt=document.getElementById('stxt');
+  if(s==='live'){dot.classList.remove('off');txt.textContent='LIVE';}
+  else if(s==='polling'){dot.classList.remove('off');txt.innerHTML='<span class="spin"></span>POLLING';}
+  else{dot.classList.add('off');txt.textContent='OFFLINE';}
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function getCfg(){return{priceMin:Number(document.getElementById('rPrice').value),whaleMin:Number(document.getElementById('rWhale').value),thresh:Number(document.getElementById('rThresh').value),walletMin:Number(document.getElementById('walletMin').value),kw:document.getElementById('keywords').value.split(',').map(function(k){return k.trim();}).filter(Boolean),tPrice:document.getElementById('tPrice').checked,tWhale:document.getElementById('tWhale').checked,tThresh:document.getElementById('tThresh').checked,tMkt:document.getElementById('tMkt').checked,tWallet:document.getElementById('tWallet').checked};}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function strip(s){return String(s).replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');}
+function ft(d){return d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function fn(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return Number(n).toFixed(0);}
+function ta(a){if(!a||a.length<10)return a||'—';return a.slice(0,6)+'…'+a.slice(-4);}
+
+// ── RESTORE SAVED EMAIL CONFIG ─────────────────────────────────
+(function(){
+  try {
+    var s=localStorage.getItem('oracle_ejs'); if(!s) return;
+    var c=JSON.parse(s);
+    document.getElementById('ejsKey').value=c.key||'';
+    document.getElementById('ejsSvc').value=c.svc||'';
+    document.getElementById('ejsTpl').value=c.tpl||'';
+    document.getElementById('eTo').value=c.to||'';
+  } catch(_){}
+})();
+</script>
+</body>
+</html>
